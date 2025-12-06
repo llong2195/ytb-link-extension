@@ -77,11 +77,12 @@ function disableExtractor() {
 function processPage() {
     // Selectors for high-level item containers
     const itemSelectors = [
-        'ytd-rich-item-renderer', 
-        'ytd-video-renderer', 
-        'ytd-grid-video-renderer', 
-        'ytd-compact-video-renderer',
-        'ytd-reel-item-renderer'
+        'ytd-rich-item-renderer',
+        'ytd-rich-grid-media',      // Standard grid videos (nested in rich-item-renderer)
+        'ytd-video-renderer',        // Search results, subscriptions feed
+        'ytd-grid-video-renderer',   // Channel videos grid
+        'ytd-compact-video-renderer', // Sidebar recommendations
+        'ytd-reel-item-renderer'     // Shorts in feed
     ];
     
     const items = document.querySelectorAll(itemSelectors.join(','));
@@ -90,6 +91,7 @@ function processPage() {
     items.forEach(item => {
         let videoId = null;
         let injectionTarget = null;
+        let isShorts = false;
         
         // 1. Try Standard Video (ytd-thumbnail)
         const stdThumbnail = item.querySelector('ytd-thumbnail, ytd-playlist-thumbnail');
@@ -99,8 +101,25 @@ function processPage() {
                  const extractedId = extractVideoId(anchor.href);
                  if (extractedId) {
                      videoId = extractedId;
-                     injectionTarget = stdThumbnail.querySelector('#overlays');
-                     if (!injectionTarget) injectionTarget = stdThumbnail;
+                     
+                     // For standard videos: inject into details area, not thumbnail
+                     // This makes it more visible and doesn't obscure the video preview
+                     const detailsArea = item.querySelector('#details');
+                     if (detailsArea) {
+                         // Try to find or create a checkbox container in details
+                         let checkboxContainer = detailsArea.querySelector('.ytb-checkbox-container');
+                         if (!checkboxContainer) {
+                             checkboxContainer = document.createElement('div');
+                             checkboxContainer.className = 'ytb-checkbox-container';
+                             checkboxContainer.style.cssText = 'position: absolute; top: 8px; right: 8px; z-index: 100;';
+                             detailsArea.style.position = 'relative'; // Ensure positioning context
+                             detailsArea.appendChild(checkboxContainer);
+                         }
+                         injectionTarget = checkboxContainer;
+                     } else {
+                         // Fallback to thumbnail overlays if details not found
+                         injectionTarget = stdThumbnail.querySelector('#overlays') || stdThumbnail;
+                     }
                  }
              }
         }
@@ -109,9 +128,11 @@ function processPage() {
         if (!videoId) {
             const shortsModel = item.querySelector('ytm-shorts-lockup-view-model');
             if (shortsModel) {
+                isShorts = true;
                 const shortsAnchor = shortsModel.querySelector('a[href^="/shorts/"]');
                 if (shortsAnchor && shortsAnchor.href) {
                     videoId = extractVideoId(shortsAnchor.href);
+                    // For Shorts: keep thumbnail injection
                     injectionTarget = shortsModel.querySelector('.shortsLockupViewModelHostThumbnailContainer');
                     if (!injectionTarget) injectionTarget = shortsModel; 
                 }
@@ -122,12 +143,10 @@ function processPage() {
         if (!videoId || !injectionTarget) return;
         
         // CRITICAL: Handle DOM recycling by YouTube's virtual scroller
-        // Check if the video ID has changed (element was recycled for different video)
         const previousId = item.dataset.ytbVideoId;
         
         if (previousId && previousId !== videoId) {
-            // Video ID changed! YouTube recycled this DOM element
-            // Remove old checkbox and clear processed flag
+            // Video ID changed - element was recycled
             const oldCheckbox = injectionTarget.querySelector('.yt-extractor-checkbox');
             if (oldCheckbox) oldCheckbox.remove();
             delete item.dataset.ytbProcessed;
@@ -143,7 +162,7 @@ function processPage() {
         item.dataset.ytbProcessed = 'true';
         item.dataset.ytbVideoId = videoId;
         
-        injectCheckbox(injectionTarget, videoId, item);
+        injectCheckbox(injectionTarget, videoId, item, isShorts);
         newItemsCount++;
     });
 
@@ -166,19 +185,22 @@ function extractVideoId(url) {
     return null;
 }
 
-function injectCheckbox(container, videoId, parentItem) {
+function injectCheckbox(container, videoId, parentItem, isShorts = false) {
     // Sanity check
     if (container.querySelector('.yt-extractor-checkbox')) return;
     
-    // Position handling
-    const style = window.getComputedStyle(container);
-    if (style.position === 'static') {
-        container.style.position = 'relative';
+    // Position handling - only needed for Shorts thumbnails
+    if (isShorts) {
+        const style = window.getComputedStyle(container);
+        if (style.position === 'static') {
+            container.style.position = 'relative';
+        }
     }
 
     const checkbox = document.createElement('div');
     checkbox.className = 'yt-extractor-checkbox';
     checkbox.title = 'Select to extract';
+    checkbox.dataset.vid = videoId;
     
     const svgChecked = `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
