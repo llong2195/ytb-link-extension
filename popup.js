@@ -67,7 +67,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             showTempMessage("Copied!");
                         });
                     } else {
-                        downloadFile(response.data, `youtube_links.${type === 'csv' ? 'csv' : 'json'}`, type);
+                        let ext = 'txt';
+                        if (type === 'csv') ext = 'csv';
+                        else if (type === 'json') ext = 'json';
+                        else if (type === 'idm') ext = 'ef2';
+                        
+                        downloadFile(response.data, `youtube_links.${ext}`, type);
                         showTempMessage(`Saved ${type.toUpperCase()}`);
                     }
                 } else if (!response.data || response.data.length === 0) {
@@ -77,9 +82,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const btnIdm = document.getElementById('btnIdm'); // New button
+
+    // ... (existing listeners)
+
     btnCopy.addEventListener('click', () => handleExport('clipboard'));
     btnCsv.addEventListener('click', () => handleExport('csv'));
     btnJson.addEventListener('click', () => handleExport('json'));
+    btnIdm.addEventListener('click', () => handleExport('idm')); // IDM Listener
 
     btnClear.addEventListener('click', () => {
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
@@ -107,7 +117,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function downloadFile(content, filename, type) {
-        const blob = new Blob([content], { type: type === 'csv' ? 'text/csv' : 'application/json' });
+        let mimeType = 'text/plain';
+        if (type === 'csv') mimeType = 'text/csv';
+        else if (type === 'json') mimeType = 'application/json';
+        else if (type === 'idm') mimeType = 'text/plain'; // .ef2 is text
+
+        const blob = new Blob([content], { type: mimeType });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

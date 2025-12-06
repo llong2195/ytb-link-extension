@@ -275,6 +275,14 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             // User requested ONLY links
             exportContent = data.map(v => v.url).join('\n');
         }
+        else if (msg.format === 'idm') {
+            // IDM Export Format (.ef2)
+            // Format:
+            // <
+            // URL
+            // >
+            exportContent = data.map(v => `<\r\n${v.url}\r\n>`).join('\r\n');
+        }
         
         sendResponse({ success: true, data: exportContent });
     }
