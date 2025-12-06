@@ -22,21 +22,39 @@ function enableExtractor() {
     isEnabled = true;
     console.log('[YTB Extractor] ENABLED');
 
+    // Debounce timeout
+    let processingTimeout = null;
+    
     observer = new MutationObserver((mutations) => {
         if (!isEnabled) return;
-        let nodesAdded = false;
+        
+        let shouldProcess = false;
         for(const m of mutations) {
-            if (m.addedNodes.length > 0) {
-                nodesAdded = true;
+            if (m.addedNodes.length > 0 || m.removedNodes.length > 0) {
+                shouldProcess = true;
                 break;
             }
         }
-        if (nodesAdded) {
-            processPage();
+        
+        if (shouldProcess) {
+            // Clear previous timeout to debounce
+            if (processingTimeout) clearTimeout(processingTimeout);
+            
+            processingTimeout = setTimeout(() => {
+                processPage();
+                processingTimeout = null;
+            }, 500);
         }
     });
-
-    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Observe entire body with childList and subtree
+    // This catches all dynamic content changes including infinite scroll
+    observer.observe(document.body, { 
+        childList: true, 
+        subtree: true 
+    });
+    
+    // Initial Scan
     processPage();
 }
 
@@ -70,55 +88,67 @@ function processPage() {
     let newItemsCount = 0;
 
     items.forEach(item => {
-        if (item.dataset.ytbProcessed) return;
-        
         let videoId = null;
         let injectionTarget = null;
         
         // 1. Try Standard Video (ytd-thumbnail)
-        // Most common for long-form videos
         const stdThumbnail = item.querySelector('ytd-thumbnail, ytd-playlist-thumbnail');
         if (stdThumbnail) {
              const anchor = stdThumbnail.querySelector('a#thumbnail');
              if (anchor && anchor.href) {
                  const extractedId = extractVideoId(anchor.href);
-                 // Ensure it is a valid video ID, not just a random link
                  if (extractedId) {
                      videoId = extractedId;
                      injectionTarget = stdThumbnail.querySelector('#overlays');
-                     if (!injectionTarget) injectionTarget = stdThumbnail; // Fallback
+                     if (!injectionTarget) injectionTarget = stdThumbnail;
                  }
              }
         }
 
         // 2. Try Shorts Grid Item (ytm-shorts-lockup-view-model)
-        // If standard thumb wasn't found (or didn't yield an ID), check for Shorts structure
         if (!videoId) {
             const shortsModel = item.querySelector('ytm-shorts-lockup-view-model');
             if (shortsModel) {
-                // Link is usually the main anchor with /shorts/
                 const shortsAnchor = shortsModel.querySelector('a[href^="/shorts/"]');
                 if (shortsAnchor && shortsAnchor.href) {
                     videoId = extractVideoId(shortsAnchor.href);
-                    // Injection Target: The image container
                     injectionTarget = shortsModel.querySelector('.shortsLockupViewModelHostThumbnailContainer');
-                    
-                    // Fallback if specific container not found, try the model itself (relative)
                     if (!injectionTarget) injectionTarget = shortsModel; 
                 }
             }
         }
         
-        // If we found a valid video ID and a place to put the checkbox
-        if (videoId && injectionTarget) {
-            item.dataset.ytbProcessed = 'true';
-            injectCheckbox(injectionTarget, videoId, item);
-            newItemsCount++;
+        // Check if this is a valid video
+        if (!videoId || !injectionTarget) return;
+        
+        // CRITICAL: Handle DOM recycling by YouTube's virtual scroller
+        // Check if the video ID has changed (element was recycled for different video)
+        const previousId = item.dataset.ytbVideoId;
+        
+        if (previousId && previousId !== videoId) {
+            // Video ID changed! YouTube recycled this DOM element
+            // Remove old checkbox and clear processed flag
+            const oldCheckbox = injectionTarget.querySelector('.yt-extractor-checkbox');
+            if (oldCheckbox) oldCheckbox.remove();
+            delete item.dataset.ytbProcessed;
+            delete item.dataset.ytbVideoId;
         }
+        
+        // Skip if already processed with same video ID
+        if (item.dataset.ytbProcessed && item.dataset.ytbVideoId === videoId) {
+            return;
+        }
+        
+        // Mark as processed with current video ID
+        item.dataset.ytbProcessed = 'true';
+        item.dataset.ytbVideoId = videoId;
+        
+        injectCheckbox(injectionTarget, videoId, item);
+        newItemsCount++;
     });
 
     if (newItemsCount > 0) {
-        // console.log(`[YTB] Processed ${newItemsCount} items.`);
+        console.log(`[YTB] Processed ${newItemsCount} items.`);
     }
 }
 
