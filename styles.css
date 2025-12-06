@@ -1,0 +1,36 @@
+/* content.js styles */
+
+.yt-extractor-checkbox {
+    position: absolute !important;
+    top: 5px !important;
+    right: 5px !important;
+    width: 24px !important;
+    height: 24px !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    border: 2px solid rgba(255, 255, 255, 0.9) !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+    z-index: 2147483647 !important; /* Max z-index */
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    pointer-events: auto !important; /* Ensure clickable */
+}
+
+.yt-extractor-checkbox:hover {
+    background-color: rgba(0, 0, 0, 0.9) !important;
+    border-color: #ffffff !important;
+}
+
+/* Selected state */
+.yt-extractor-checkbox.selected {
+    background-color: #3ea6ff !important;
+    border-color: #3ea6ff !important;
+}
+
+.yt-extractor-checkbox svg {
+    width: 16px !important;
+    height: 16px !important;
+    color: white !important;
+    display: block !important;
+}

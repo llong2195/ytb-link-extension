@@ -1,97 +1,113 @@
-
 document.addEventListener('DOMContentLoaded', () => {
-    const copyBtn = document.getElementById('copyBtn');
-    const csvBtn = document.getElementById('csvBtn');
-    const jsonBtn = document.getElementById('jsonBtn');
-    const clearBtn = document.getElementById('clearBtn');
-    const countSpan = document.getElementById('selectedCount');
+    const toggle = document.getElementById('toggleExtractor');
+    const countDisplay = document.getElementById('countDisplay');
+    const btnCopy = document.getElementById('btnCopy');
+    const btnCsv = document.getElementById('btnCsv');
+    const btnJson = document.getElementById('btnJson');
+    const btnClear = document.getElementById('btnClear');
     const statusMsg = document.getElementById('statusMsg');
 
-    function showStatus(msg, type = 'success') {
-        statusMsg.textContent = msg;
-        statusMsg.className = `mt-3 text-center text-sm ${type === 'error' ? 'text-red-400' : 'text-green-400'}`;
-        statusMsg.classList.remove('hidden');
-        setTimeout(() => {
-            statusMsg.classList.add('hidden');
-        }, 3000);
-    }
+    // 1. Initialize State
+    chrome.storage.local.get(['ytbExtractorEnabled'], (result) => {
+        toggle.checked = !!result.ytbExtractorEnabled;
+        updateStatus();
+    });
 
-    // Initialize count
+    // 2. Poll for current count when popup is opened
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        if (tabs[0]) {
-            chrome.tabs.sendMessage(tabs[0].id, {action: 'getStatus'}, (response) => {
-                if (chrome.runtime.lastError) return; // Content script might not be loaded
-                if (response && response.count !== undefined) {
-                    countSpan.textContent = `${response.count} Selected`;
+        if (tabs[0]?.id) {
+            chrome.tabs.sendMessage(tabs[0].id, {action: 'getSelected'}, (response) => {
+                if (!chrome.runtime.lastError && response) {
+                    countDisplay.textContent = response.count || 0;
                 }
             });
         }
     });
 
-    // Listen for updates from content script
-    chrome.runtime.onMessage.addListener((message) => {
-        if (message.action === 'updateCount') {
-            countSpan.textContent = `${message.count} Selected`;
-        }
-    });
-
-    clearBtn.addEventListener('click', () => {
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, {action: 'clearSelection'});
-            countSpan.textContent = '0 Selected';
+    // 3. Toggle Handlers
+    toggle.addEventListener('change', () => {
+        const isEnabled = toggle.checked;
+        chrome.storage.local.set({ ytbExtractorEnabled: isEnabled }, () => {
+            updateStatus();
+            // Notify Content Script
+            chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+                if(tabs[0]?.id) {
+                    chrome.tabs.sendMessage(tabs[0].id, { 
+                        action: 'toggleExtractor', 
+                        state: isEnabled 
+                    });
+                }
+            });
         });
     });
 
-    copyBtn.addEventListener('click', () => {
-        requestData('copy');
-    });
+    function updateStatus() {
+        if (toggle.checked) {
+            statusMsg.textContent = 'Active - Click thumbnails';
+            statusMsg.classList.add('active');
+        } else {
+            statusMsg.textContent = 'Disabled';
+            statusMsg.classList.remove('active');
+        }
+    }
 
-    csvBtn.addEventListener('click', () => {
-        requestData('csv');
-    });
-
-    jsonBtn.addEventListener('click', () => {
-        requestData('json');
-    });
-
-    function requestData(type) {
+    // 4. Export logic
+    const handleExport = (type) => {
         chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            if (!tabs[0]) {
-                 showStatus('No active tab', 'error');
-                 return;
-            }
-            chrome.tabs.sendMessage(tabs[0].id, {action: 'export', type: type}, (response) => {
-                if (chrome.runtime.lastError) {
-                    showStatus('Content script not ready', 'error');
+            if (!tabs[0]?.id) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'getExportData', format: type }, (response) => {
+                if (chrome.runtime.lastError || !response) {
+                    statusMsg.innerText = "Error: Please refresh YouTube";
                     return;
                 }
                 
-                if (response && response.success) {
-                    if (type === 'copy') {
-                        // Data is in response.data, we need to write it to clipboard here in popup context
-                        // because content script might not have focus for clipboard write in some versions
-                        // BUT `content.js` usually handles clipboard if triggered by user action.
-                        // However, simpler to let content script return string and we write here?
-                        // Actually, clipboard write from popup is reliable.
+                if (response.success && response.data) {
+                    if (type === 'clipboard') {
                         navigator.clipboard.writeText(response.data).then(() => {
-                            showStatus('Copied to Clipboard!');
-                        }).catch(err => {
-                            console.error('Failed to copy: ', err);
-                            showStatus('Failed to copy', 'error');
+                            showTempMessage("Copied!");
                         });
-                    } else if (type === 'csv' || type === 'json') {
-                         downloadFile(response.data, response.filename, response.mimeType);
-                         showStatus('Export started!');
+                    } else {
+                        downloadFile(response.data, `youtube_links.${type === 'csv' ? 'csv' : 'json'}`, type);
+                        showTempMessage(`Saved ${type.toUpperCase()}`);
                     }
-                } else {
-                    showStatus(response.message || 'No videos selected', 'error');
+                } else if (!response.data || response.data.length === 0) {
+                     showTempMessage("No selection!");
                 }
             });
         });
+    };
+
+    btnCopy.addEventListener('click', () => handleExport('clipboard'));
+    btnCsv.addEventListener('click', () => handleExport('csv'));
+    btnJson.addEventListener('click', () => handleExport('json'));
+
+    btnClear.addEventListener('click', () => {
+        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
+            if (!tabs[0]?.id) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: 'clearSelection' }, () => {
+                countDisplay.textContent = '0';
+                showTempMessage("Cleared");
+            });
+        });
+    });
+
+    // 5. Message Listener for live updates
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.action === 'updateCount') {
+            countDisplay.textContent = msg.count;
+        }
+    });
+
+    function showTempMessage(msg) {
+        const originalText = statusMsg.textContent;
+        statusMsg.textContent = msg;
+        setTimeout(() => {
+            statusMsg.textContent = originalText;
+        }, 1500);
     }
 
-    function downloadFile(content, filename, mimeType) {
-        const blob = new Blob([content], {type: mimeType});
+    function downloadFile(content, filename, type) {
+        const blob = new Blob([content], { type: type === 'csv' ? 'text/csv' : 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -99,6 +115,5 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        URL.revokeObjectURL(url);
     }
 });
