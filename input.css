@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom checkbox style if needed, but Tailwind should suffice for most */
+.yt-link-extractor-checkbox {
+  @apply w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2;
+}
+
+.yt-link-extractor-overlay {
+  @apply absolute top-1 right-1 z-50 p-1 bg-black/50 rounded;
+}
