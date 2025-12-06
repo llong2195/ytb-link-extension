@@ -14,7 +14,7 @@
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
-    pointer-events: auto !important;
+    pointer-events: none !important;
     transition: all 0.2s ease !important;
 }
 
@@ -48,4 +48,13 @@
 
 .ytb-checkbox-container .yt-extractor-checkbox {
     pointer-events: auto !important;
+}
+
+/* Selection mode indicator - items with click blocker */
+[data-ytb-processed="true"] {
+    cursor: pointer !important;
+}
+
+[data-ytb-processed="true"] a {
+    cursor: pointer !important;
 }

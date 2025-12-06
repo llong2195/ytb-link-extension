@@ -64,9 +64,21 @@ function disableExtractor() {
         observer.disconnect();
         observer = null;
     }
+    
+    // Remove click blockers from all items
+    document.querySelectorAll('[data-ytb-processed]').forEach(item => {
+        if (item._ytbClickBlocker) {
+            item.removeEventListener('click', item._ytbClickBlocker, true);
+            delete item._ytbClickBlocker;
+        }
+        delete item.dataset.ytbProcessed;
+        delete item.dataset.ytbVideoId;
+    });
+    
+    // Remove all checkboxes
     const checkboxes = document.querySelectorAll('.yt-extractor-checkbox');
     checkboxes.forEach(el => el.remove());
-    document.querySelectorAll('[data-ytb-processed]').forEach(el => delete el.dataset.ytbProcessed);
+    
     console.log('[YTB Extractor] DISABLED');
 }
 
@@ -151,6 +163,11 @@ function processPage() {
             if (oldCheckbox) oldCheckbox.remove();
             delete item.dataset.ytbProcessed;
             delete item.dataset.ytbVideoId;
+            // Remove old click blocker if exists
+            if (item._ytbClickBlocker) {
+                item.removeEventListener('click', item._ytbClickBlocker, true);
+                delete item._ytbClickBlocker;
+            }
         }
         
         // Skip if already processed with same video ID
@@ -161,6 +178,34 @@ function processPage() {
         // Mark as processed with current video ID
         item.dataset.ytbProcessed = 'true';
         item.dataset.ytbVideoId = videoId;
+        
+        // Add click blocker to prevent navigation and handle selection
+        if (!item._ytbClickBlocker) {
+            item._ytbClickBlocker = function(e) {
+                // Block navigation
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                
+                // Find the checkbox in this item
+                const checkbox = item.querySelector('.yt-extractor-checkbox');
+                if (checkbox) {
+                    // Toggle selection by programmatically triggering checkbox logic
+                    const videoId = item.dataset.ytbVideoId;
+                    if (videoId) {
+                        toggleSelection(videoId, item, checkbox, `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+       <polyline points="20 6 9 17 4 12"></polyline>
+    </svg>`);
+                    }
+                }
+                
+                return false;
+            };
+            
+            // Use capture phase to intercept before YouTube's handlers
+            item.addEventListener('click', item._ytbClickBlocker, true);
+        }
         
         injectCheckbox(injectionTarget, videoId, item, isShorts);
         newItemsCount++;
@@ -199,7 +244,7 @@ function injectCheckbox(container, videoId, parentItem, isShorts = false) {
 
     const checkbox = document.createElement('div');
     checkbox.className = 'yt-extractor-checkbox';
-    checkbox.title = 'Select to extract';
+    checkbox.title = 'Click anywhere to select';
     checkbox.dataset.vid = videoId;
     
     const svgChecked = `
@@ -212,11 +257,7 @@ function injectCheckbox(container, videoId, parentItem, isShorts = false) {
         checkbox.innerHTML = svgChecked;
     }
 
-    checkbox.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); 
-        toggleSelection(videoId, parentItem, checkbox, svgChecked);
-    });
+    // No click listener needed - handled by item's click blocker
 
     container.appendChild(checkbox);
 }
