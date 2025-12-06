@@ -7,18 +7,20 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnClear = document.getElementById('btnClear');
     const statusMsg = document.getElementById('statusMsg');
 
+    const videoList = document.getElementById('videoList');
+
     // 1. Initialize State
     chrome.storage.local.get(['ytbExtractorEnabled'], (result) => {
         toggle.checked = !!result.ytbExtractorEnabled;
         updateStatus();
     });
 
-    // 2. Poll for current count when popup is opened
+    // 2. Poll for current count AND list when popup is opened
     chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
         if (tabs[0]?.id) {
             chrome.tabs.sendMessage(tabs[0].id, {action: 'getSelected'}, (response) => {
                 if (!chrome.runtime.lastError && response) {
-                    countDisplay.textContent = response.count || 0;
+                    updateUI(response.count, response.items);
                 }
             });
         }
@@ -49,6 +51,24 @@ document.addEventListener('DOMContentLoaded', () => {
             statusMsg.textContent = 'Disabled';
             statusMsg.classList.remove('active');
         }
+    }
+
+    function updateUI(count, items) {
+        countDisplay.textContent = count || 0;
+        renderVideoList(items || []);
+    }
+
+    function renderVideoList(items) {
+        if (items.length === 0) {
+            videoList.style.display = 'none';
+            videoList.textContent = '';
+            return;
+        }
+        
+        videoList.style.display = 'block';
+        // Display as plain text: one URL per line
+        const text = items.map(item => item.url).join('\n');
+        videoList.textContent = text;
     }
 
     // 4. Export logic
@@ -103,8 +123,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 5. Message Listener for live updates
     chrome.runtime.onMessage.addListener((msg) => {
-        if (msg.action === 'updateCount') {
-            countDisplay.textContent = msg.count;
+        if (msg.action === 'selectionChanged') {
+            updateUI(msg.count, msg.items);
         }
     });
 

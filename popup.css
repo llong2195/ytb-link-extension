@@ -116,3 +116,43 @@ input:checked + .slider:before { transform: translateX(20px); }
 
 .status { margin-top: 12px; text-align: center; font-size: 12px; color: #a1a1aa; height: 16px; }
 .status.active { color: #4ade80; }
+
+/* Video List - Simple Text Display */
+.video-list {
+    max-height: 200px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    padding: 12px;
+    background-color: #18181b;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 11px;
+    line-height: 1.6;
+    color: #a1a1aa;
+    white-space: pre-wrap;
+    word-break: break-all;
+    display: none;
+}
+
+.video-list:not(:empty) {
+    display: block;
+}
+
+/* Scrollbar */
+.video-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.video-list::-webkit-scrollbar-track {
+    background: #18181b;
+}
+
+.video-list::-webkit-scrollbar-thumb {
+    background: #52525b;
+    border-radius: 3px;
+}
+
+.video-list::-webkit-scrollbar-thumb:hover {
+    background: #71717a;
+}

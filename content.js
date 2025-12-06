@@ -233,8 +233,16 @@ function toggleSelection(videoId, parentItem, checkbox, svgResult) {
         checkbox.innerHTML = svgResult;
     }
     
+    notifySelectionChange();
+}
+
+function notifySelectionChange() {
     try {
-        chrome.runtime.sendMessage({ action: 'updateCount', count: selectedVideos.size });
+        chrome.runtime.sendMessage({ 
+            action: 'selectionChanged', 
+            count: selectedVideos.size,
+            items: Array.from(selectedVideos.values())
+        });
     } catch(e) {}
 }
 
@@ -294,7 +302,25 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         else disableExtractor();
     } 
     else if (msg.action === 'getSelected') {
-        sendResponse({ count: selectedVideos.size });
+        sendResponse({ 
+            count: selectedVideos.size,
+            items: Array.from(selectedVideos.values())
+        });
+    }
+    else if (msg.action === 'removeVideo') {
+        const videoId = msg.videoId;
+        if (videoId && selectedVideos.has(videoId)) {
+            selectedVideos.delete(videoId);
+            
+            // Find and update checkbox in DOM
+            const checkbox = document.querySelector(`.yt-extractor-checkbox[data-vid="${videoId}"]`);
+            if (checkbox) {
+                checkbox.classList.remove('selected');
+                checkbox.innerHTML = '';
+            }
+            
+            notifySelectionChange();
+        }
     }
     else if (msg.action === 'clearSelection') {
         selectedVideos.clear();
@@ -302,6 +328,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
             el.classList.remove('selected');
             el.innerHTML = '';
         });
+        notifySelectionChange();
         sendResponse({ success: true });
     }
     else if (msg.action === 'getExportData') {
