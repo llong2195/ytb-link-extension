@@ -255,19 +255,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     else if (msg.action === 'getExportData') {
         const data = Array.from(selectedVideos.values());
         let exportContent = '';
+        
         if (msg.format === 'csv') {
+            // Add BOM for Excel compatibility
+            const bom = '\uFEFF';
             const headers = 'ID,Link,Channel ID,Title\n';
-            const rows = data.map(v => 
-                `${v.id},${v.url},"${(v.channelId||'').replace(/"/g,'""')}","${(v.title||'').replace(/"/g,'""')}"`
-            ).join('\n');
-            exportContent = headers + rows;
+            const rows = data.map(v => {
+                // Escape quotes
+                const cId = (v.channelId || '').replace(/"/g, '""');
+                const title = (v.title || '').replace(/"/g, '""');
+                return `${v.id},${v.url},"${cId}","${title}"`;
+            }).join('\n');
+            exportContent = bom + headers + rows;
         } 
         else if (msg.format === 'json') {
             exportContent = JSON.stringify(data, null, 2);
         }
         else if (msg.format === 'clipboard') {
-            exportContent = data.map(v => `${v.title}\n${v.url}`).join('\n\n');
+            // User requested ONLY links
+            exportContent = data.map(v => v.url).join('\n');
         }
+        
         sendResponse({ success: true, data: exportContent });
     }
 });
