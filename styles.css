@@ -1,60 +1,60 @@
 /* content.js styles */
 
 .yt-extractor-checkbox {
-    position: absolute !important;
-    top: 5px !important;
-    right: 5px !important;
-    width: 22px !important;
-    height: 22px !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    border: 2px solid rgba(255, 255, 255, 0.8) !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-    z-index: 2147483647 !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    pointer-events: none !important;
-    transition: all 0.2s ease !important;
+  position: absolute !important;
+  top: 5px !important;
+  right: 5px !important;
+  width: 22px !important;
+  height: 22px !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  border: 2px solid rgba(255, 255, 255, 0.8) !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  z-index: 2147483647 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+  transition: all 0.2s ease !important;
 }
 
 .yt-extractor-checkbox:hover {
-    background-color: rgba(0, 0, 0, 0.95) !important;
-    border-color: #ffffff !important;
-    transform: scale(1.1) !important;
+  background-color: rgba(0, 0, 0, 0.95) !important;
+  border-color: #ffffff !important;
+  transform: scale(1.1) !important;
 }
 
 /* Selected state */
 .yt-extractor-checkbox.selected {
-    background-color: #3ea6ff !important;
-    border-color: #3ea6ff !important;
+  background-color: #3ea6ff !important;
+  border-color: #3ea6ff !important;
 }
 
 .yt-extractor-checkbox.selected:hover {
-    background-color: #2d8fd8 !important;
+  background-color: #2d8fd8 !important;
 }
 
 .yt-extractor-checkbox svg {
-    width: 14px !important;
-    height: 14px !important;
-    color: white !important;
-    display: block !important;
+  width: 14px !important;
+  height: 14px !important;
+  color: white !important;
+  display: block !important;
 }
 
 /* Container for standard videos */
 .ytb-checkbox-container {
-    pointer-events: none !important;
+  pointer-events: none !important;
 }
 
 .ytb-checkbox-container .yt-extractor-checkbox {
-    pointer-events: auto !important;
+  pointer-events: auto !important;
 }
 
 /* Selection mode indicator - items with click blocker */
 [data-ytb-processed="true"] {
-    cursor: pointer !important;
+  cursor: pointer !important;
 }
 
 [data-ytb-processed="true"] a {
-    cursor: pointer !important;
+  cursor: pointer !important;
 }
