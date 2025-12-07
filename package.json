@@ -5,15 +5,21 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tailwindcss -i ./input.css -o ./output.css"
+    "build:css": "tailwindcss -i ./input.css -o ./output.css",
+    "build:js": "webpack --mode production",
+    "build": "npm run build:js && npm run build:css",
+    "watch": "webpack --watch --mode development",
+    "dev": "webpack --watch --mode development"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "autoprefixer": "^10.4.22",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.16"
+    "@types/chrome": "^0.1.32",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.103.0",
+    "webpack-cli": "^6.0.1"
   }
 }

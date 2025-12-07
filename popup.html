@@ -1,58 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YTB Link Extractor</title>
-    <link href="popup.css" rel="stylesheet">
-</head>
-<body>
-    
+    <link href="popup.css" rel="stylesheet" />
+  </head>
+  <body>
     <div class="header">
-        <h1 class="title">YouTube Extractor</h1>
-        <label class="switch">
-            <input type="checkbox" id="toggleExtractor">
-            <span class="slider"></span>
-        </label>
+      <h1 class="title">YouTube Extractor</h1>
+      <label class="switch">
+        <input type="checkbox" id="toggleExtractor" />
+        <span class="slider"></span>
+      </label>
     </div>
 
     <div class="stats">
-        <div class="stats-label">Selected Videos</div>
-        <div id="countDisplay" class="stats-count">0</div>
+      <div class="stats-label">Selected Videos</div>
+      <div id="countDisplay" class="stats-count">0</div>
     </div>
 
     <!-- Video List Container -->
     <div id="videoList" class="video-list"></div>
 
     <div class="btn-group">
-        <button id="btnCopy" class="btn btn-primary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
-            Copy Links
-        </button>
-        
-        <div class="row">
-            <button id="btnCsv" class="btn btn-secondary">
-                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                CSV
-            </button>
-            <button id="btnJson" class="btn btn-secondary">
-                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                JSON
-            </button>
-        </div>
+      <button id="btnCopy" class="btn btn-primary">
+        <svg
+          class="btn-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+          ></path>
+        </svg>
+        Copy Links
+      </button>
 
-        <button id="btnIdm" class="btn btn-idm">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-            Export to IDM (.ef2)
+      <div class="row">
+        <button id="btnCsv" class="btn btn-secondary">
+          <svg
+            class="btn-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            ></path>
+          </svg>
+          CSV
         </button>
+        <button id="btnJson" class="btn btn-secondary">
+          <svg
+            class="btn-icon"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            ></path>
+          </svg>
+          JSON
+        </button>
+      </div>
 
-        <button id="btnClear" class="btn btn-danger-ghost">
-            Clear Selection
-        </button>
+      <button id="btnIdm" class="btn btn-idm">
+        <svg
+          class="btn-icon"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          ></path>
+        </svg>
+        Export to IDM (.ef2)
+      </button>
+
+      <button id="btnClear" class="btn btn-danger-ghost">
+        Clear Selection
+      </button>
     </div>
 
     <div id="statusMsg" class="status"></div>
 
-    <script src="popup.js"></script>
-</body>
+    <script src="dist/popup.js"></script>
+  </body>
 </html>
