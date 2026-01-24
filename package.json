@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build:css": "tailwindcss -i ./input.css -o ./output.css",
     "build:js": "webpack --mode production",
-    "build": "npm run build:js && npm run build:css",
+    "build": "npm run build:js",
     "watch": "webpack --watch --mode development",
     "dev": "webpack --watch --mode development"
   },
@@ -16,10 +15,13 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@types/chrome": "^0.1.32",
+    "@types/chrome": "^0.1.36",
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
-    "webpack": "^5.103.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "tailwindcss": "^4.1.18"
   }
 }
