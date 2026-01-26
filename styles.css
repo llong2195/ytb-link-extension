@@ -58,3 +58,29 @@
 [data-ytb-processed="true"] a {
   cursor: pointer !important;
 }
+
+/* Downloaded Badge */
+.ytb-downloaded-badge {
+  position: absolute !important;
+  top: 5px !important;
+  left: 5px !important;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  padding: 4px 8px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important;
+  z-index: 2147483646 !important;
+  pointer-events: none !important;
+  font-family: "Roboto", "Arial", sans-serif !important;
+  line-height: 1 !important;
+}
+
+.ytb-downloaded-badge::before {
+  content: "✓ " !important;
+  margin-right: 2px !important;
+}
+

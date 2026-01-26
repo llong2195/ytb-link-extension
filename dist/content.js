@@ -3,7 +3,83 @@
 let isEnabled = false;
 let selectedVideos = new Map();
 let observer = null;
+let downloadedVideosCache = new Map();
 // --- Initialization ---
+// --- API Functions ---
+/**
+ * Check if videos are downloaded by calling the backend API via background worker
+ */
+async function checkDownloadedVideos(videoUrls) {
+    if (videoUrls.length === 0)
+        return new Map();
+    try {
+        // Send request to background worker to avoid CORS/PNA issues
+        const response = await chrome.runtime.sendMessage({
+            action: "checkDownloads",
+            videoUrls: videoUrls,
+        });
+        if (response.error) {
+            console.error("[YTB] API check failed:", response.error);
+            return new Map();
+        }
+        // Convert plain object back to Map
+        const downloadedMap = new Map(Object.entries(response));
+        console.log(`[YTB] Downloaded check completed: ${downloadedMap.size} results`);
+        return downloadedMap;
+    }
+    catch (error) {
+        console.error("[YTB] Error checking downloads:", error);
+        return new Map();
+    }
+}
+/**
+ * Update download badges for visible videos
+ */
+async function updateDownloadBadges() {
+    // Collect all visible video URLs
+    const videoItems = document.querySelectorAll("[data-ytb-video-id]");
+    const videoUrls = [];
+    const videoElements = new Map();
+    videoItems.forEach((item) => {
+        const videoId = item.dataset.ytbVideoId;
+        if (videoId) {
+            const url = `https://www.youtube.com/watch?v=${videoId}`;
+            videoUrls.push(url);
+            videoElements.set(videoId, item);
+        }
+    });
+    if (videoUrls.length === 0)
+        return;
+    // Check download status
+    const downloadedMap = await checkDownloadedVideos(videoUrls);
+    // Update cache and badges
+    downloadedMap.forEach((isDownloaded, videoId) => {
+        downloadedVideosCache.set(videoId, isDownloaded);
+        const element = videoElements.get(videoId);
+        if (element && isDownloaded) {
+            addDownloadedBadge(element);
+        }
+    });
+}
+/**
+ * Add "Downloaded" badge to a video element
+ */
+function addDownloadedBadge(parentItem) {
+    // Check if badge already exists
+    if (parentItem.querySelector(".ytb-downloaded-badge"))
+        return;
+    // Find the thumbnail container
+    const thumbnail = parentItem.querySelector("ytd-thumbnail, ytm-shorts-lockup-view-model");
+    if (!thumbnail)
+        return;
+    // Create badge
+    const badge = document.createElement("div");
+    badge.className = "ytb-downloaded-badge";
+    badge.textContent = "Downloaded";
+    badge.title = "This video has been downloaded";
+    // Append to thumbnail
+    thumbnail.appendChild(badge);
+}
 function init() {
     // console.log('[YTB] Content script loaded');
     chrome.storage.local.get(["ytbExtractorEnabled"], (result) => {
@@ -37,6 +113,8 @@ function enableExtractor() {
             processingTimeout = setTimeout(() => {
                 processPage();
                 processingTimeout = null;
+                // Check downloads after mutations
+                updateDownloadBadges();
             }, 500);
         }
     });
@@ -48,6 +126,10 @@ function enableExtractor() {
     });
     // Initial Scan
     processPage();
+    // Check downloads after initial page load
+    setTimeout(() => {
+        updateDownloadBadges();
+    }, 1000);
 }
 function disableExtractor() {
     isEnabled = false;
@@ -263,6 +345,7 @@ function extractMetadata(id, parentItem) {
     let url = `https://www.youtube.com/watch?v=${id}`;
     let title = "Unknown Video";
     let channelId = "";
+    let isDownloaded = downloadedVideosCache.get(id) || false;
     // --- Title Extraction ---
     // 1. Standard
     const titleEl = parentItem.querySelector("#video-title");
@@ -303,7 +386,7 @@ function extractMetadata(id, parentItem) {
             }
         }
     }
-    return { id, url, title, channelId };
+    return { id, url, title, channelId, isDownloaded };
 }
 // --- Messaging ---
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
